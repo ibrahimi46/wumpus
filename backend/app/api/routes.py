@@ -4,15 +4,16 @@ from core.game import Wumpus
 router = APIRouter()
 game = Wumpus(size=4)
 
-@router.get("/new-game")
+@router.post("/new-game")
 def new_game():
-    pass
+    game.reset()
+    return game.get_full_state()
 
 
-@router.get("/ai-move")
+@router.post("/ai-move")
 def ai_move():
-    if game.finished or game.won:
-        return game.get_full_stats()
+    if game.game_over or game.won:
+        return game.get_full_state()
     
-    game.ai_move
-    return game.get_full_stats()
+    game.ai_step()
+    return game.get_full_state()
