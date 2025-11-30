@@ -1,7 +1,11 @@
+import "./index.css";
+
 function App() {
   return (
     <>
-      <h1>Hello World</h1>
+      <div className="bg-orange-400">
+        <h1 className="text-blue-200">wll</h1>
+      </div>
     </>
   );
 }
