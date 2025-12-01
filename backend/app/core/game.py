@@ -24,6 +24,8 @@ class Wumpus:
         self.danger = [[False] * self.size for i in range(self.size)]
         self.log = ["Gaem started. Agent is at (1,1)"]
 
+        self.generate_world()
+
     def generate_world(self):
         # wumppus position
         while True:

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from core.game import Wumpus
+from ..core.game import Wumpus
 
 router = APIRouter()
 game = Wumpus(size=4)
