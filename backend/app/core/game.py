@@ -159,7 +159,7 @@ class Wumpus:
 
         # check for gold
         if self.has_gold:
-            path = self._a_star((self.agent_pos[0], self.agent_pos[1]), (0,0))
+            path = self.a_star((self.agent_pos[0], self.agent_pos[1]), (0,0))
             if len(path) > 1:
                 self._move_to(path[1])
             else:
@@ -177,9 +177,9 @@ class Wumpus:
 
         if safe_unvisited:
             target = min(safe_unvisited, key=lambda p: abs(p[0]-self.agent_pos[0]) + abs(p[1]-self.agent_pos[1]))
-            path = self._a_star(self.agent_pos, target)
+            path = self.a_star(self.agent_pos, target)
             if len(path) > 1:
-                self._move_to(path[1])
+                self.move_to(path[1])
         else:
             self.log.append("No safe moves — exploring visited...")
 
@@ -197,7 +197,7 @@ class Wumpus:
 
         self.agent_pos = pos
         self.score -= 1
-        self._enter_cell(*pos)
+        self.enter_cell(*pos)
         self.log.append(f"Moved to ({pos[0]+1},{pos[1]+1})")
 
     def get_full_state(self):
@@ -210,8 +210,8 @@ class Wumpus:
                     "visited": self.visited[y][x],
                     "safe": self.safe[y][x],
                     "danger": self.danger[y][x],
-                    "breeze": self._has_adjacent_pit(x, y),
-                    "stench": self._has_adjacent_wumpus(x, y),
+                    "breeze": self.has_adjacent_pit(x, y),
+                    "stench": self.has_adjacent_wp(x, y),
                     "glitter": self.world[y][x] == 'G',
                     "hasAgent": (x, y) == self.agent_pos,
                     "agentDir": ["right","down","left","up"][self.agent_dir],

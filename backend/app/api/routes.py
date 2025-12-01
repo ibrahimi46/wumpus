@@ -5,13 +5,13 @@ router = APIRouter()
 game = Wumpus(size=4)
 
 @router.post("/new-game")
-def new_game():
+async def new_game():
     game.reset()
     return game.get_full_state()
 
 
 @router.post("/ai-move")
-def ai_move():
+async def ai_move():
     if not game.alive or game.won:
         return game.get_full_state()
     

@@ -1,39 +1,12 @@
 function Grid({ gameState }) {
   const size = 4;
-
-  const dummyCells = Array(size)
-    .fill()
-    .map(() =>
-      Array(size).fill({
-        visited: false,
-        safe: false,
-        danger: false,
-        hasAgent: false,
-        agentDir: "right",
-        breeze: false,
-        stench: false,
-        glitter: false,
-        wumpus: false,
-        pit: false,
-      })
-    );
-
-  if (!gameState) {
-    dummyCells[0][0] = {
-      ...dummyCells[0][0],
-      hasAgent: true,
-      visited: true,
-      safe: true,
-    };
-  }
-
   return (
     <div className="inline-block">
       <div
         className="grid gap-1 p-4 bg-slate-900/60 rounded-lg border border-slate-600"
         style={{ gridTemplateColumns: `repeat(${size}, minmax(0, 1fr))` }}
       >
-        {dummyCells.map((row, y) =>
+        {gameState?.grid?.map((row, y) =>
           row.map((cell, x) => (
             <div
               key={`${x}-${y}`}

@@ -6,13 +6,13 @@ import StatusBar from "./components/StatusBar";
 
 function App() {
   const [isAiPlaying, setIsAiPlaying] = useState(false);
-  const [gameState, setGameState] = useState();
+  const [gameState, setGameState] = useState(null);
   const [logs, setLogs] = useState([]);
 
   const addLog = (message) => {
     setLogs((prev) => [
       ...prev,
-      [`[${new Date().toLocaleDateString()}] - ${message}`],
+      `[${new Date().toLocaleDateString()}] - ${message}`,
     ]);
   };
   return (
