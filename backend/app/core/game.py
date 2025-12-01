@@ -112,6 +112,7 @@ class Wumpus:
         changed = True
         while changed:
             changed = False
+            
             for y in range(self.size):
                 for x in range(self.size):
                     if not self.visited[y][x]:
@@ -119,43 +120,44 @@ class Wumpus:
 
                     adj = self.get_adjacent(x, y)
                     perceptions = self.get_perceptions(x, y)
+                    
                     has_breeze = "breeze" in perceptions
                     has_stench = "stench" in perceptions
 
-                    # if no breeze all adjcanet cells are safe
-                    if not has_breeze:
+                 
+                    if not has_breeze and not has_stench:
                         for ax, ay in adj:
-                            if not self.danger[ay][ax]:
-                                if not self.safe[ay][ax]:
-                                    self.safe[ay][ax] = True
-                                    changed = True
-
-                    # if its breeze with 3 safe neighbors its a pit
+                            if not self.safe[ay][ax] and not self.danger[ay][ax]:
+                                self.safe[ay][ax] = True
+                                changed = True
+                    
+                   
                     if has_breeze:
-                        safe_neighbors = [(ax, ay) for ax, ay in adj if self.safe[ay][ax]]
-                        if len(safe_neighbors) == len(adj) - 1:
-                            for ax, ay in adj:
-                                if not self.safe[ay][ax] and not self.danger[ay][ax]:
-                                    self.danger[ay][ax] = True
-                                    self.log.append(f"Inferred PIT at ({ax+1},{ay+1})")
-                                    changed = True
-
-                    # if stench adj are safe
-                    if not has_stench:
+                        unknown_neighbors = []
                         for ax, ay in adj:
-                            if not self.danger[ay][ax]:
-                                if not self.safe[ay][ax]:
-                                    self.safe[ay][ax] = True
-                                    changed = True
+                            if not self.safe[ay][ax]:
+                                unknown_neighbors.append((ax, ay))
+                        
+                        if len(unknown_neighbors) == 1:
+                            ux, uy = unknown_neighbors[0]
+                            if not self.danger[uy][ux]:
+                                self.danger[uy][ux] = True
+                                self.log.append(f"Inferred PIT at ({ux+1},{uy+1})")
+                                changed = True
 
+                    
                     if has_stench:
-                        safe_neighbors = [(ax, ay) for ax, ay in adj if self.safe[ay][ax]]
-                        if len(safe_neighbors) == len(adj) - 1:
-                            for ax, ay in adj:
-                                if not self.safe[ay][ax] and not self.danger[ay][ax]:
-                                    self.danger[ay][ax] = True
-                                    self.log.append(f"Inferred WUMPUS at ({ax+1},{ay+1})")
-                                    changed = True
+                        unknown_neighbors = []
+                        for ax, ay in adj:
+                            if not self.safe[ay][ax]:
+                                unknown_neighbors.append((ax, ay))
+                        
+                        if len(unknown_neighbors) == 1:
+                            ux, uy = unknown_neighbors[0]
+                            if not self.danger[uy][ux]:
+                                self.danger[uy][ux] = True
+                                self.log.append(f"Inferred WUMPUS at ({ux+1},{uy+1})")
+                                changed = True
 
     def get_adjacent(self, x, y):
         adj = []
@@ -167,8 +169,6 @@ class Wumpus:
 
     def ai_step(self):
         if not self.alive or self.won: return
-
-        # check safe and unvisited
         safe_unvisited = []
         for y in range(self.size):
             for x in range(self.size):
@@ -176,21 +176,37 @@ class Wumpus:
                     safe_unvisited.append((x, y))
 
         if safe_unvisited:
+            
+            random.shuffle(safe_unvisited)
+            
             target = min(safe_unvisited, key=lambda p: abs(p[0]-self.agent_pos[0]) + abs(p[1]-self.agent_pos[1]))
             path = self.a_star(self.agent_pos, target)
             if len(path) > 1:
                 self.move_to(path[1])
         else:
-            unknown = []
+            candidates = []
             for y in range(self.size):
                 for x in range(self.size):
                     if not self.visited[y][x] and not self.danger[y][x] and not self.safe[y][x]:
-                        unknown.append((x, y))
+                        
+                        risk = 0
+                        neighbors = self.get_adjacent(x, y)
+                        for nx, ny in neighbors:
+                            if self.visited[ny][nx]:
+                                p = self.get_perceptions(nx, ny)
+                                if "breeze" in p: risk += 1
+                                if "stench" in p: risk += 1
+                        candidates.append(((x,y), risk))
             
-            if unknown:
-                target = min(unknown, key=lambda p: abs(p[0]-self.agent_pos[0]) + abs(p[1]-self.agent_pos[1]))
+            if candidates:
+                
+                candidates.sort(key=lambda item: item[1])
+                
+                target = candidates[0][0] 
                 path = self.a_star(self.agent_pos, target)
+                
                 if len(path) > 1:
+                    self.log.append("Taking a risky move...")
                     self.move_to(path[1])
             else:
                 self.log.append("No moves available — STUCK!")
