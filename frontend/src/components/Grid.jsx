@@ -41,10 +41,14 @@ function Grid({ gameState }) {
               )}
 
               <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 text-xs">
-                {cell.breeze && <span className="text-cyan-400">~</span>}
-                {cell.stench && <span className="text-purple-400">☣</span>}
-                {cell.glitter && (
-                  <span className="text-yellow-300 animate-pulse">✦</span>
+                {cell.hasPit && (
+                  <span className="text-red-600 text-5xl">🕳️</span>
+                )}
+                {cell.hasWumpus && (
+                  <span className="text-red-500 text-5xl">👹</span>
+                )}
+                {cell.hasGold && (
+                  <span className="text-yellow-300 text-5xl">🏆</span>
                 )}
               </div>
 

@@ -1,4 +1,5 @@
 import random
+from collections import deque
 
 class Wumpus:
 
@@ -44,10 +45,15 @@ class Wumpus:
                 self.gold_pos = (x,y)
                 break
 
-        for x in range(self.size):
-            for y in range(self.size-1):
-                if (x,y) not in [(0,0), self.wp_pos, self.gold_pos]:
+        for i in range(self.size - 1):
+            while True:
+                x, y = random.randint(0, self.size-1), random.randint(0, self.size-1)
+                if (x,y) not in [(0,0), self.wp_pos, self.gold_pos] and (x,y) not in self.pits:
                     self.pits.append((x,y))
+                    self.world[y][x] = "P"
+                    break
+
+
 
     def has_adjacent_pit(self, x, y) -> bool:
         for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]:
@@ -59,7 +65,7 @@ class Wumpus:
         return False
     
     def has_adjacent_wp(self, x, y) -> bool:
-        for dx, dy in [(0,0), (0,1), (1,0), (-1,0)]:
+        for dx, dy in [(0,1),(1,0),(0,-1),(-1,0)]:
             nx , ny = dx+x, dy+y
             if 0 <= nx < self.size and 0 <= ny < self.size:
                 if self.world[ny][nx] == "W":
@@ -90,6 +96,11 @@ class Wumpus:
             self.log.append("Eaten by wumpus. DEAD!")
             return
         
+        if self.world[y][x] == "G" and not self.has_gold:
+            self.has_gold = True
+            self.won = True
+            self.score += 1000
+            self.log.append("Found GOLD — YOU WIN!")
 
         perceptions = self.get_perceptions(x, y)
         if perceptions:
@@ -157,17 +168,6 @@ class Wumpus:
     def ai_step(self):
         if not self.alive or self.won: return
 
-        # check for gold
-        if self.has_gold:
-            path = self.a_star((self.agent_pos[0], self.agent_pos[1]), (0,0))
-            if len(path) > 1:
-                self._move_to(path[1])
-            else:
-                self.won = True
-                self.score += 1000
-                self.log.append("CLIMBED OUT WITH GOLD — YOU WIN!")
-            return
-
         # check safe and unvisited
         safe_unvisited = []
         for y in range(self.size):
@@ -184,16 +184,40 @@ class Wumpus:
             self.log.append("No safe moves — exploring visited...")
 
     def a_star(self, start, goal):
-        return [start, goal]
+        queue = deque([start])
+        came = {start: None}
+
+        while queue:
+            x, y = queue.popleft()
+
+            if (x, y) == goal:
+                break
+
+            for nx, ny in self.get_adjacent(x, y):
+                if (nx, ny) not in came and (self.safe[ny][nx] or (nx, ny) == goal):
+                    came[(nx, ny)] = (x, y)
+                    queue.append((nx, ny))
+
+        if goal not in came:
+            return [start]
+
+        path = []
+        cur = goal
+        while cur is not None:
+            path.append(cur)
+            cur = came[cur]
+        path.reverse()
+
+        return path
         
     def move_to(self, pos):
         dx = pos[0] - self.agent_pos[0]
         dy = pos[1] - self.agent_pos[1]
 
         if dx == 1: self.agent_dir = 0
-        elif dy == -1: self.agent_dir = 1
-        elif dx == -1: self.agent_dir = 2
-        elif dy == 1: self.agent_dir = 3
+        elif dy == 1: self.agent_dir = 1
+        elif dx == -1: self.agent_dir = 2 
+        elif dy == -1: self.agent_dir = 3  
 
         self.agent_pos = pos
         self.score -= 1
@@ -215,6 +239,9 @@ class Wumpus:
                     "glitter": self.world[y][x] == 'G',
                     "hasAgent": (x, y) == self.agent_pos,
                     "agentDir": ["right","down","left","up"][self.agent_dir],
+                    "hasPit": self.world[y][x] == 'P',
+                    "hasWumpus": self.world[y][x] == 'W',
+                    "hasGold": self.world[y][x] == 'G',
                 }
                 row.append(cell)
             grid.append(row)
