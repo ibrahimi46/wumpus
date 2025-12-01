@@ -6,6 +6,7 @@ import StatusBar from "./components/StatusBar";
 function App() {
   const [isAiPlaying, setIsAiPlaying] = useState(false);
   const [gameState, setGameState] = useState(null);
+  const [showSolution, setShowSolution] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
@@ -23,7 +24,7 @@ function App() {
                 Cave Map (4x4)
               </h2>
               <div className="flex justify-center">
-                <Grid gameState={gameState} />
+                <Grid gameState={gameState} showSolution={showSolution} />
               </div>
             </div>
           </div>
@@ -39,6 +40,14 @@ function App() {
                 isAiPlaying={isAiPlaying}
                 setIsAiPlaying={setIsAiPlaying}
               />
+            </div>
+            <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
+              <button
+                onClick={() => setShowSolution(!showSolution)}
+                className="w-full py-3 px-4 bg-blue-700 rounded font-semibold transition-colors"
+              >
+                {showSolution ? "Hide World" : "Show World"}
+              </button>
             </div>
           </div>
         </div>
