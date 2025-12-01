@@ -181,7 +181,19 @@ class Wumpus:
             if len(path) > 1:
                 self.move_to(path[1])
         else:
-            self.log.append("No safe moves — exploring visited...")
+            unknown = []
+            for y in range(self.size):
+                for x in range(self.size):
+                    if not self.visited[y][x] and not self.danger[y][x] and not self.safe[y][x]:
+                        unknown.append((x, y))
+            
+            if unknown:
+                target = min(unknown, key=lambda p: abs(p[0]-self.agent_pos[0]) + abs(p[1]-self.agent_pos[1]))
+                path = self.a_star(self.agent_pos, target)
+                if len(path) > 1:
+                    self.move_to(path[1])
+            else:
+                self.log.append("No moves available — STUCK!")
 
     def a_star(self, start, goal):
         queue = deque([start])

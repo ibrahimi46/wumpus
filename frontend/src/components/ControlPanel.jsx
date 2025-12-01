@@ -1,12 +1,11 @@
 import { useEffect } from "react";
 import { newGame, aiMove } from "../lib/api";
 
-function ControlPanel({ setGameState, addLog, isAiPlaying, setIsAiPlaying }) {
+function ControlPanel({ setGameState, isAiPlaying, setIsAiPlaying }) {
   const handleNewGame = async () => {
     setIsAiPlaying(false);
     const data = await newGame();
     setGameState(data);
-    addLog("New Game started!");
   };
 
   const toggleAi = () => {
@@ -25,26 +24,21 @@ function ControlPanel({ setGameState, addLog, isAiPlaying, setIsAiPlaying }) {
 
         if (data.gameOver || data.won) {
           setIsAiPlaying(false);
-          addLog(data.won ? "AI Won!" : "AI Lost!");
         } else {
           timeoutId = setTimeout(makeMove, 500);
         }
       } catch (error) {
         console.error("AI Move failed:", error);
         setIsAiPlaying(false);
-        addLog("AI Error: Stopped");
       }
     };
 
     if (isAiPlaying) {
-      addLog("AI Agent playing");
       makeMove();
-    } else {
-      addLog("AI stopped");
     }
 
     return () => clearTimeout(timeoutId);
-  }, [isAiPlaying, setGameState, addLog, setIsAiPlaying]);
+  }, [isAiPlaying, setGameState, setIsAiPlaying]);
 
   return (
     <div className="space-y-5">

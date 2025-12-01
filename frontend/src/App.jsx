@@ -1,20 +1,12 @@
 import { useState } from "react";
 import Grid from "./components/Grid";
-import LogPanel from "./components/LogPanel";
 import ControlPanel from "./components/ControlPanel";
 import StatusBar from "./components/StatusBar";
 
 function App() {
   const [isAiPlaying, setIsAiPlaying] = useState(false);
   const [gameState, setGameState] = useState(null);
-  const [logs, setLogs] = useState([]);
 
-  const addLog = (message) => {
-    setLogs((prev) => [
-      ...prev,
-      `[${new Date().toLocaleDateString()}] - ${message}`,
-    ]);
-  };
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <nav className="bg-slate-800 border-b border-slate-700 px-6 py-4">
@@ -44,14 +36,9 @@ function App() {
               <ControlPanel
                 gameState={gameState}
                 setGameState={setGameState}
-                addLog={addLog}
                 isAiPlaying={isAiPlaying}
                 setIsAiPlaying={setIsAiPlaying}
               />
-            </div>
-
-            <div className="bg-slate-800 rounded-lg border border-slate-700 h-96">
-              <LogPanel logs={logs} />
             </div>
           </div>
         </div>
