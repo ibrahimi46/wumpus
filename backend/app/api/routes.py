@@ -12,7 +12,7 @@ def new_game():
 
 @router.post("/ai-move")
 def ai_move():
-    if game.game_over or game.won:
+    if not game.alive or game.won:
         return game.get_full_state()
     
     game.ai_step()

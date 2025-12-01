@@ -23,9 +23,9 @@ function ControlPanel({ setGameState, addLog, isAiPlaying, setIsAiPlaying }) {
         const data = await aiMove();
         setGameState(data);
 
-        if (data.gameOver || data.gamewon) {
+        if (data.gameOver || data.won) {
           setIsAiPlaying(false);
-          addLog(data.gamewon ? "AI Won!" : "AI Lost!");
+          addLog(data.won ? "AI Won!" : "AI Lost!");
         } else {
           timeoutId = setTimeout(makeMove, 500);
         }

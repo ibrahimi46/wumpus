@@ -6,7 +6,7 @@ import StatusBar from "./components/StatusBar";
 
 function App() {
   const [isAiPlaying, setIsAiPlaying] = useState(false);
-  const [gameState, setGameState] = useState(true);
+  const [gameState, setGameState] = useState();
   const [logs, setLogs] = useState([]);
 
   const addLog = (message) => {

@@ -25,6 +25,7 @@ class Wumpus:
         self.log = ["Gaem started. Agent is at (1,1)"]
 
         self.generate_world()
+        self.enter_cell(0,0)
 
     def generate_world(self):
         # wumppus position
@@ -43,7 +44,7 @@ class Wumpus:
                 self.gold_pos = (x,y)
                 break
 
-        for x in range(self.size-1):
+        for x in range(self.size):
             for y in range(self.size-1):
                 if (x,y) not in [(0,0), self.wp_pos, self.gold_pos]:
                     self.pits.append((x,y))
@@ -52,7 +53,7 @@ class Wumpus:
         for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]:
             nx, ny = dx+x, dy+y
             if 0 <= nx < self.size and 0 <= ny < self.size:
-                if self.world[y][x] == "W":
+                if self.world[ny][nx] == "P":
                     return True
                 
         return False
@@ -61,12 +62,19 @@ class Wumpus:
         for dx, dy in [(0,0), (0,1), (1,0), (-1,0)]:
             nx , ny = dx+x, dy+y
             if 0 <= nx < self.size and 0 <= ny < self.size:
-                if self.world[y][x] == "P":
+                if self.world[ny][nx] == "W":
                     return True
             
         return False
+    
+    def get_perceptions(self, x: int, y: int):
+        p = set()
+        if self.has_adjacent_pit(x, y):   p.add("breeze")
+        if self.has_adjacent_wp(x, y):    p.add("stench")
+        if self.world[y][x] == "G":       p.add("glitter")
+        return p
 
-    def enter_cell(self, y, x):
+    def enter_cell(self, x, y):
         self.visited[y][x] = True
         self.safe[y][x] = True
 
@@ -83,17 +91,9 @@ class Wumpus:
             return
         
 
-        perceptions = []
-        if self.has_adjacent_pit(x=x, y=y):
-            perceptions.append("breeze")
-        if self.has_adjacent_wp(x=x, y=y):
-            perceptions.append("stench")
-        if self.world[y][x] == "G":
-            perceptions.append("Letsgoooooooo!")
-            self.won = True
-
+        perceptions = self.get_perceptions(x, y)
         if perceptions:
-            self.log.append(perceptions)
+            self.log.append(",".join(perceptions))
 
         self.infer_knowledge()
 
@@ -106,8 +106,8 @@ class Wumpus:
                     if not self.visited[y][x]:
                         continue
 
-                    adj = self._get_adjacent(x, y)
-                    perceptions = self._get_perceptions(x, y)
+                    adj = self.get_adjacent(x, y)
+                    perceptions = self.get_perceptions(x, y)
                     has_breeze = "breeze" in perceptions
                     has_stench = "stench" in perceptions
 
@@ -146,7 +146,7 @@ class Wumpus:
                                     self.log.append(f"Inferred WUMPUS at ({ax+1},{ay+1})")
                                     changed = True
 
-    def get_adjacent(self):
+    def get_adjacent(self, x, y):
         adj = []
         for dx, dy in [(0,1),(1,0),(0,-1),(-1,0)]:
             nx, ny = x+dx, y+dy
