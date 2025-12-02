@@ -20,16 +20,13 @@ function Grid({ gameState, showSolution }) {
                 }
               `}
             >
-              {cell.hasAgent && (
-                <span className="absolute inset-0 flex items-center justify-center text-yellow-400 text-4xl animate-pulse z-20">
-                  {cell.agentDir === "right" && "→"}
-                  {cell.agentDir === "down" && "↓"}
-                  {cell.agentDir === "left" && "←"}
-                  {cell.agentDir === "up" && "↑"}
+              {cell.agentHere && (
+                <span className="absolute inset-0 flex items-center justify-center text-yellow-400 text-4xl animate-pulse z-30">
+                  👨🏻‍🦽‍➡️
                 </span>
               )}
 
-              {cell.visited && !showSolution && (
+              {cell.visited && !(x === 0 && y === 0) && (
                 <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-1 z-10">
                   {cell.breeze && (
                     <span className="text-cyan-400 text-3xl">💨</span>
@@ -45,20 +42,16 @@ function Grid({ gameState, showSolution }) {
 
               {showSolution && (
                 <div className="absolute inset-0 flex items-center justify-center z-10">
-                  {cell.hasPit && (
-                    <span className="text-red-600 text-5xl">💨</span>
+                  {cell.realPit && (
+                    <span className="text-red-600 text-5xl">🕳️</span>
                   )}
-                  {cell.hasWumpus && (
-                    <span className="text-red-500 text-5xl">🕳️</span>
+                  {cell.realWumpus && (
+                    <span className="text-red-500 text-5xl">👹</span>
                   )}
-                  {cell.hasGold && (
+                  {cell.realGold && (
                     <span className="text-yellow-300 text-5xl">🏆</span>
                   )}
                 </div>
-              )}
-
-              {!cell.visited && !cell.hasAgent && (
-                <span className="text-slate-700 text-2xl z-0">?</span>
               )}
             </div>
           ))

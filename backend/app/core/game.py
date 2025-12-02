@@ -23,9 +23,14 @@ class Wumpus:
         self.visited = [[False] * self.size for i in range(self.size)]
         self.safe = [[False] * self.size for i in range(self.size)]
         self.danger = [[False] * self.size for i in range(self.size)]
-        self.log = ["Gaem started. Agent is at (1,1)"]
+
+        self.risk_meter = [[0.0 for x in range(self.size)] for i in range(self.size)]
+        self.suspected_pits = [[False] * self.size for i in range(self.size)]
+        self.suspected_wumpus = [[False] * self.size for i in range(self.size)]
+        self.confirmed_safe = [[False] * self.size for i in range(self.size)]
 
         self.generate_world()
+        self.confirmed_safe[0][0] = True
         self.enter_cell(0,0)
 
     def generate_world(self):
@@ -53,8 +58,6 @@ class Wumpus:
                     self.world[y][x] = "P"
                     break
 
-
-
     def has_adjacent_pit(self, x, y) -> bool:
         for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]:
             nx, ny = dx+x, dy+y
@@ -74,11 +77,17 @@ class Wumpus:
         return False
     
     def get_perceptions(self, x: int, y: int):
-        p = set()
-        if self.has_adjacent_pit(x, y):   p.add("breeze")
-        if self.has_adjacent_wp(x, y):    p.add("stench")
-        if self.world[y][x] == "G":       p.add("glitter")
-        return p
+        res = {"breeze": False, "stench": False, "glitter": False}
+        
+        if self.world[y][x] == "G": 
+            res["glitter"] = True
+            
+        for dx, dy in [(0,1), (1,0), (0,-1), (-1,0)]:
+            nx, ny = x+dx, y+dy
+            if 0 <= nx < self.size and 0 <= ny < self.size:
+                if self.world[ny][nx] == "P": res["breeze"] = True
+                if self.world[ny][nx] == "W": res["stench"] = True
+        return res
 
     def enter_cell(self, x, y):
         self.visited[y][x] = True
@@ -87,78 +96,95 @@ class Wumpus:
         if self.world[y][x] == "P":
             self.alive = False
             self.score -= 1000
-            self.log.append("Fell into a pit. DEAD!")
+            
             return
 
         if self.world[y][x] == "W":
             self.alive = False
             self.score -= 1000
-            self.log.append("Eaten by wumpus. DEAD!")
+            
             return
         
         if self.world[y][x] == "G" and not self.has_gold:
             self.has_gold = True
             self.won = True
             self.score += 1000
-            self.log.append("Found GOLD — YOU WIN!")
-
-        perceptions = self.get_perceptions(x, y)
-        if perceptions:
-            self.log.append(",".join(perceptions))
-
-        self.infer_knowledge()
-
-    def infer_knowledge(self):
-        changed = True
-        while changed:
-            changed = False
             
-            for y in range(self.size):
-                for x in range(self.size):
-                    if not self.visited[y][x]:
-                        continue
 
-                    adj = self.get_adjacent(x, y)
-                    perceptions = self.get_perceptions(x, y)
-                    
-                    has_breeze = "breeze" in perceptions
-                    has_stench = "stench" in perceptions
+        percepts = self.get_perceptions(x, y)
+        
+        p_str = []
+        if percepts["breeze"]: p_str.append("BREEZE")
+        if percepts["stench"]: p_str.append("STENCH")
+        if percepts["glitter"]: p_str.append("GLITTER")
 
-                 
-                    if not has_breeze and not has_stench:
-                        for ax, ay in adj:
-                            if not self.safe[ay][ax] and not self.danger[ay][ax]:
-                                self.safe[ay][ax] = True
-                                changed = True
-                    
-                   
-                    if has_breeze:
-                        unknown_neighbors = []
-                        for ax, ay in adj:
-                            if not self.safe[ay][ax]:
-                                unknown_neighbors.append((ax, ay))
-                        
-                        if len(unknown_neighbors) == 1:
-                            ux, uy = unknown_neighbors[0]
-                            if not self.danger[uy][ux]:
-                                self.danger[uy][ux] = True
-                                self.log.append(f"Inferred PIT at ({ux+1},{uy+1})")
-                                changed = True
+        self.infer_knowledge(x=x, y=y, percepts=percepts)
 
-                    
-                    if has_stench:
-                        unknown_neighbors = []
-                        for ax, ay in adj:
-                            if not self.safe[ay][ax]:
-                                unknown_neighbors.append((ax, ay))
-                        
-                        if len(unknown_neighbors) == 1:
-                            ux, uy = unknown_neighbors[0]
-                            if not self.danger[uy][ux]:
-                                self.danger[uy][ux] = True
-                                self.log.append(f"Inferred WUMPUS at ({ux+1},{uy+1})")
-                                changed = True
+    def get_best_move(self):
+        if not self.alive or self.won: return None
+        
+        candidates = []
+        best_safe = None
+        min_dist_safe = float('inf')
 
+        frontier = set()
+        for y in range(self.size):
+            for x in range(self.size):
+                if self.visited[y][x]:
+                    for nx, ny in self.get_adjacent(x, y):
+                        if not self.visited[ny][nx]:
+                            frontier.add((nx, ny))
+
+
+        for fx, fy in frontier:
+        
+            if self.confirmed_safe[fy][fx]:
+        
+                dist = abs(fx - self.agent_pos[0]) + abs(fy - self.agent_pos[1])
+                if dist < min_dist_safe:
+                    min_dist_safe = dist
+                    best_safe = (fx, fy)
+            
+        
+            candidates.append(((fx, fy), self.risk_meter[fy][fx]))
+
+        
+        if best_safe:
+            return best_safe
+
+        
+        if candidates:
+            candidates.sort(key=lambda x: x[1]) 
+            return candidates[0][0]
+            
+        return None
+
+    def infer_knowledge(self, x, y, percepts):
+        self.visited[y][x] = True
+        self.safe[y][x] = True
+    
+        if not percepts["breeze"] and not percepts["stench"]:
+            for nx, ny in self.get_adjacent(x, y):
+                self.confirmed_safe[ny][nx] = True
+                self.risk_meter[ny][nx] = 0.0
+                self.suspected_pits[ny][nx] = False
+                self.suspected_wumpus[ny][nx] = False
+        
+        
+        
+        if percepts["breeze"]:
+            for nx, ny in self.get_adjacent(x, y):
+                if not self.visited[ny][nx] and not self.confirmed_safe[ny][nx]:
+                    self.suspected_pits[ny][nx] = True
+                    self.risk_meter[ny][nx] += 0.3
+
+        
+        if percepts["stench"]:
+            for nx, ny in self.get_adjacent(x, y):
+                if not self.visited[ny][nx] and not self.confirmed_safe[ny][nx]:
+                    self.suspected_wumpus[ny][nx] = True
+                    self.risk_meter[ny][nx] += 0.3
+           
     def get_adjacent(self, x, y):
         adj = []
         for dx, dy in [(0,1),(1,0),(0,-1),(-1,0)]:
@@ -168,48 +194,11 @@ class Wumpus:
         return adj
 
     def ai_step(self):
-        if not self.alive or self.won: return
-        safe_unvisited = []
-        for y in range(self.size):
-            for x in range(self.size):
-                if self.safe[y][x] and not self.visited[y][x]:
-                    safe_unvisited.append((x, y))
-
-        if safe_unvisited:
-            
-            random.shuffle(safe_unvisited)
-            
-            target = min(safe_unvisited, key=lambda p: abs(p[0]-self.agent_pos[0]) + abs(p[1]-self.agent_pos[1]))
-            path = self.a_star(self.agent_pos, target)
-            if len(path) > 1:
-                self.move_to(path[1])
+        target = self.get_best_move()
+        if target:
+            self.move_to(target)
         else:
-            candidates = []
-            for y in range(self.size):
-                for x in range(self.size):
-                    if not self.visited[y][x] and not self.danger[y][x] and not self.safe[y][x]:
-                        
-                        risk = 0
-                        neighbors = self.get_adjacent(x, y)
-                        for nx, ny in neighbors:
-                            if self.visited[ny][nx]:
-                                p = self.get_perceptions(nx, ny)
-                                if "breeze" in p: risk += 1
-                                if "stench" in p: risk += 1
-                        candidates.append(((x,y), risk))
-            
-            if candidates:
-                
-                candidates.sort(key=lambda item: item[1])
-                
-                target = candidates[0][0] 
-                path = self.a_star(self.agent_pos, target)
-                
-                if len(path) > 1:
-                    self.log.append("Taking a risky move...")
-                    self.move_to(path[1])
-            else:
-                self.log.append("No moves available — STUCK!")
+            pass
 
     def a_star(self, start, goal):
         queue = deque([start])
@@ -250,26 +239,32 @@ class Wumpus:
         self.agent_pos = pos
         self.score -= 1
         self.enter_cell(*pos)
-        self.log.append(f"Moved to ({pos[0]+1},{pos[1]+1})")
 
     def get_full_state(self):
+        suggested_move = self.get_best_move()
+
         grid = []
         for y in range(self.size):
             row = []
             for x in range(self.size):
                 cell = {
-                    "x": x+1, "y": y+1,
+                    "x": x, "y": y,
                     "visited": self.visited[y][x],
-                    "safe": self.safe[y][x],
-                    "danger": self.danger[y][x],
-                    "breeze": self.has_adjacent_pit(x, y),
-                    "stench": self.has_adjacent_wp(x, y),
-                    "glitter": self.world[y][x] == 'G',
-                    "hasAgent": (x, y) == self.agent_pos,
-                    "agentDir": ["right","down","left","up"][self.agent_dir],
-                    "hasPit": self.world[y][x] == 'P',
-                    "hasWumpus": self.world[y][x] == 'W',
-                    "hasGold": self.world[y][x] == 'G',
+                    "agentHere": (x,y) == self.agent_pos,
+                    
+                    
+                    "isSafe": self.confirmed_safe[y][x],
+                    "isAiSuggestion": suggested_move == (x,y),
+                    
+                    
+                    "breeze": self.visited[y][x] and any(self.world[ny][nx] == "P" for nx, ny in self.get_adjacent(x, y)),
+                    "stench": self.visited[y][x] and any(self.world[ny][nx] == "W" for nx, ny in self.get_adjacent(x, y)),
+                    "glitter": self.visited[y][x] and self.world[y][x] == "G",
+                    
+                    
+                    "realPit": self.world[y][x] == "P",
+                    "realWumpus": self.world[y][x] == "W",
+                    "realGold": self.world[y][x] == "G",
                 }
                 row.append(cell)
             grid.append(row)
@@ -281,6 +276,4 @@ class Wumpus:
             "hasGold": self.has_gold,
             "won": self.won,
             "gameOver": not self.alive or self.won,
-            "logLines": self.log[-20:], 
         }
-

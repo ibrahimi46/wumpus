@@ -25,7 +25,7 @@ function ControlPanel({ setGameState, isAiPlaying, setIsAiPlaying }) {
         if (data.gameOver || data.won) {
           setIsAiPlaying(false);
         } else {
-          timeoutId = setTimeout(makeMove, 500);
+          timeoutId = setTimeout(makeMove, 1000);
         }
       } catch (error) {
         console.error("AI Move failed:", error);
